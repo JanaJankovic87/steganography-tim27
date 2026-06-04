@@ -1,21 +1,7 @@
-"""
-Student 3 — Kapacitet LSB steganografije
-
-Odgovara na pitanje:
-  "Koliko maksimalno karaktera može stati u sliku pre nego što
-   postane vidljivo ili pređemo na drugi bit?"
-
-Pokretanje:  python capacity.py
-Izlaz:
-  - tabela kapaciteta za sve tri slike (1–4 bita po kanalu)
-  - output_images/capacity_comparison.png  (vizuelno poređenje)
-  - prag vidljivosti
-"""
-
 import random
 import string
 import sys
-    
+
 sys.stdout.reconfigure(encoding='utf-8')
 
 from PIL import Image, ImageDraw
@@ -28,12 +14,7 @@ TERMINATOR = "@@snoopy@@"
 TERMINATOR_BITS = len(TERMINATOR) * 8
 
 
-
-# Pomoćne funkcije
-
-
 def max_chars(image_path, bits_per_channel=1):
-    """Maksimalan broj karaktera koji staje u sliku koristeći N bita po kanalu."""
     img = Image.open(resolve_input_image(image_path)).convert('RGB')
     w, h = img.size
     total_bits = w * h * 3 * bits_per_channel
@@ -42,13 +23,6 @@ def max_chars(image_path, bits_per_channel=1):
 
 
 def embed_nbits(image_path, message, bits_per_channel, output_filename):
-    """
-    Ugradnja poruke koristeći N LSB bita po kanalu (generalizovani LSB).
-
-    bits_per_channel=1  →  identično sa standardnom embed() funkcijom
-    bits_per_channel=2  →  koristi 2 najmanje značajna bita (2× kapacitet)
-    ...
-    """
     img = Image.open(resolve_input_image(image_path)).convert('RGB')
     pixels = list(img.getdata())
 
@@ -63,7 +37,6 @@ def embed_nbits(image_path, message, bits_per_channel, output_filename):
             f"slika ima {max_available} bita za {bits_per_channel} bit/kanal."
         )
 
-    # Maska briše N LSB bita: npr. za N=2 → 0b11111100
     mask = 0xFF ^ ((1 << bits_per_channel) - 1)
     new_pixels = []
     bit_index = 0
@@ -84,12 +57,7 @@ def embed_nbits(image_path, message, bits_per_channel, output_filename):
     out.save(resolve_output_image(output_filename))
 
 
-
 def make_comparison_strip(items, output_filename):
-    """
-    Kreira jednu sliku sa svim verzijama side-by-side + labelama ispod.
-    items: lista (filename, label) parova
-    """
     LABEL_H = 28
     imgs = [Image.open(resolve_input_image(fn)).convert('RGB') for fn, _ in items]
 
@@ -103,21 +71,14 @@ def make_comparison_strip(items, output_filename):
 
     for i, (im, (_, label)) in enumerate(zip(resized, items)):
         strip.paste(im, (i * target_w, 0))
-        text_x = i * target_w + 6
-        text_y = target_h + 6
-        draw.text((text_x, text_y), label, fill=(255, 255, 255))
+        draw.text((i * target_w + 6, target_h + 6), label, fill=(255, 255, 255))
 
     strip.save(resolve_output_image(output_filename))
     print(f"Poređenje sačuvano: output_images/{output_filename}")
 
 
 def random_text(n):
-    """Nasumični tekst dužine n karaktera (za popunjavanje kapaciteta)."""
     return ''.join(random.choices(string.ascii_letters + string.digits + ' ', k=n))
-
-
-
-# 1. Tabela kapaciteta
 
 
 print("=" * 70)
@@ -139,10 +100,6 @@ print()
 print("Formula:  max_znakova = (W * H * 3_kanala * N_bita_po_kanalu) / 8  -  terminator")
 print()
 
-
-# 2. Vizuelna degradacija — slika popunjena do punog kapaciteta
-
-
 print("=" * 70)
 print("VIZUELNA DEGRADACIJA  —  svaki nivo popunjen do maksimalnog kapaciteta")
 print("=" * 70)
@@ -162,10 +119,6 @@ print()
 make_comparison_strip(items, "capacity_comparison.png")
 print()
 
-
-# 3. Prag vidljivosti
-
-
 print("=" * 70)
 print("PRAG VIDLJIVOSTI")
 print("=" * 70)
@@ -183,8 +136,6 @@ print("Siguran maksimum = 1 LSB po kanalu.")
 print("Svaki dodatni bit DUPLIRA kapacitet, ali povećava rizik od detekcije.")
 print()
 
-# 4. Konkretan primer za prezentaciju
-
 print("=" * 70)
 print("KONKRETAN PRIMER  —  snoopy1.jpg")
 print("=" * 70)
@@ -195,4 +146,3 @@ print(f"  Dimenzije:         {w} x {h} = {w*h:,} piksela")
 print(f"  Kanali po pikselu: 3  (R, G, B)")
 print(f"  Ukupno bita (1-bit LSB): {w*h*3:,}")
 print(f"  Maksimalno znakova (1-bit): {safe_cap:,}")
-print(f"  Ekvivalentno:      ~{safe_cap // 10000} stranica teksta")
